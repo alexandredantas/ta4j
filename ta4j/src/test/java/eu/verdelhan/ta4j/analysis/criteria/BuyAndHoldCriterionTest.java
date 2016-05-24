@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -23,13 +23,11 @@
 package eu.verdelhan.ta4j.analysis.criteria;
 
 import eu.verdelhan.ta4j.AnalysisCriterion;
-import eu.verdelhan.ta4j.Operation;
-import eu.verdelhan.ta4j.Operation.OperationType;
+import eu.verdelhan.ta4j.Order;
 import eu.verdelhan.ta4j.TATestsUtils;
 import eu.verdelhan.ta4j.Trade;
+import eu.verdelhan.ta4j.TradingRecord;
 import eu.verdelhan.ta4j.mocks.MockTimeSeries;
-import java.util.ArrayList;
-import java.util.List;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
@@ -38,38 +36,37 @@ public class BuyAndHoldCriterionTest {
     @Test
     public void calculateOnlyWithGainTrades() {
         MockTimeSeries series = new MockTimeSeries(100, 105, 110, 100, 95, 105);
-        List<Trade> trades = new ArrayList<Trade>();
-        trades.add(new Trade(Operation.buyAt(0), Operation.sellAt(2)));
-        trades.add(new Trade(Operation.buyAt(3), Operation.sellAt(5)));
+        TradingRecord tradingRecord = new TradingRecord(
+                Order.buyAt(0), Order.sellAt(2),
+                Order.buyAt(3), Order.sellAt(5));
 
         AnalysisCriterion buyAndHold = new BuyAndHoldCriterion();
-        assertEquals(1.05, buyAndHold.calculate(series, trades), TATestsUtils.TA_OFFSET);
+        assertEquals(1.05, buyAndHold.calculate(series, tradingRecord), TATestsUtils.TA_OFFSET);
     }
 
     @Test
     public void calculateOnlyWithLossTrades() {
         MockTimeSeries series = new MockTimeSeries(100, 95, 100, 80, 85, 70);
-        List<Trade> trades = new ArrayList<Trade>();
-        trades.add(new Trade(Operation.buyAt(0), Operation.sellAt(1)));
-        trades.add(new Trade(Operation.buyAt(2), Operation.sellAt(5)));
+        TradingRecord tradingRecord = new TradingRecord(
+                Order.buyAt(0), Order.sellAt(1),
+                Order.buyAt(2), Order.sellAt(5));
 
         AnalysisCriterion buyAndHold = new BuyAndHoldCriterion();
-        assertEquals(0.7, buyAndHold.calculate(series, trades), TATestsUtils.TA_OFFSET);
+        assertEquals(0.7, buyAndHold.calculate(series, tradingRecord), TATestsUtils.TA_OFFSET);
     }
 
     @Test
     public void calculateWithNoTrades() {
         MockTimeSeries series = new MockTimeSeries(100, 95, 100, 80, 85, 70);
-        List<Trade> trades = new ArrayList<Trade>();
 
         AnalysisCriterion buyAndHold = new BuyAndHoldCriterion();
-        assertEquals(0.7, buyAndHold.calculate(series, trades), TATestsUtils.TA_OFFSET);
+        assertEquals(0.7, buyAndHold.calculate(series, new TradingRecord()), TATestsUtils.TA_OFFSET);
     }
     
     @Test
     public void calculateWithOneTrade() {
         MockTimeSeries series = new MockTimeSeries(100, 105);
-        Trade trade = new Trade(Operation.buyAt(0), Operation.sellAt(1));
+        Trade trade = new Trade(Order.buyAt(0), Order.sellAt(1));
         AnalysisCriterion buyAndHold = new BuyAndHoldCriterion();
         assertEquals(105d/100, buyAndHold.calculate(series, trade), TATestsUtils.TA_OFFSET);
     }

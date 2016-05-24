@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,10 +22,10 @@
  */
 package eu.verdelhan.ta4j;
 
-import eu.verdelhan.ta4j.Operation.OperationType;
-import eu.verdelhan.ta4j.mocks.MockStrategy;
+import eu.verdelhan.ta4j.Order.OrderType;
 import eu.verdelhan.ta4j.mocks.MockTick;
 import eu.verdelhan.ta4j.mocks.MockTimeSeries;
+import eu.verdelhan.ta4j.trading.rules.FixedRule;
 import java.util.LinkedList;
 import java.util.List;
 import org.joda.time.DateTime;
@@ -86,10 +86,8 @@ public class TimeSeriesTest {
                     dtf.parseDateTime("2015-12-01")
                 });
 
-        strategy = new MockStrategy(
-                new Operation[] { null, null, Operation.buyAt(2), Operation.buyAt(3), null, null, Operation.buyAt(6), null, null },
-                new Operation[] { null, null, null, null, Operation.sellAt(4), null, null, Operation.sellAt(7), Operation.sellAt(8) }
-                );
+        strategy = new Strategy(new FixedRule(0, 2, 3, 6), new FixedRule(1, 4, 7, 8));
+        strategy.setUnstablePeriod(2); // Strategy would need a real test class
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -376,75 +374,85 @@ public class TimeSeriesTest {
 
         assertEquals(8, subseries.get(3).getBegin());
         assertEquals(10, subseries.get(3).getEnd());
-
     }
 
     @Test
     public void runOnWholeSeries() {
         TimeSeries series = new MockTimeSeries(20d, 40d, 60d, 10d, 30d, 50d, 0d, 20d, 40d);
 
-        List<Trade> allTrades = series.run(strategy);
+        List<Trade> allTrades = series.run(strategy).getTrades();
         assertEquals(2, allTrades.size());
+    }
+    
+    @Test
+    public void runOnWholeSeriesWithAmount() {
+        TimeSeries series = new MockTimeSeries(20d, 40d, 60d, 10d, 30d, 50d, 0d, 20d, 40d);
+
+        List<Trade> allTrades = series.run(strategy,OrderType.BUY, Decimal.HUNDRED).getTrades();
+        
+        assertEquals(2, allTrades.size());
+        assertEquals(Decimal.HUNDRED, allTrades.get(0).getEntry().getAmount());
+        assertEquals(Decimal.HUNDRED, allTrades.get(1).getEntry().getAmount());
+
     }
 
     @Test
     public void runOnSlice() {
         List<TimeSeries> subseries = seriesForRun.split(Period.years(2000));
-        List<Trade> trades = subseries.get(0).run(strategy);
+        TimeSeries slice = subseries.get(0);
+        List<Trade> trades = slice.run(strategy).getTrades();
         assertEquals(2, trades.size());
 
-        assertEquals(Operation.buyAt(2), trades.get(0).getEntry());
-        assertEquals(Operation.sellAt(4), trades.get(0).getExit());
+        assertEquals(Order.buyAt(2, slice.getTick(2).getClosePrice(), Decimal.NaN), trades.get(0).getEntry());
+        assertEquals(Order.sellAt(4, slice.getTick(4).getClosePrice(), Decimal.NaN), trades.get(0).getExit());
 
-        assertEquals(Operation.buyAt(6), trades.get(1).getEntry());
-        assertEquals(Operation.sellAt(7), trades.get(1).getExit());
+        assertEquals(Order.buyAt(6, slice.getTick(6).getClosePrice(), Decimal.NaN), trades.get(1).getEntry());
+        assertEquals(Order.sellAt(7, slice.getTick(7).getClosePrice(), Decimal.NaN), trades.get(1).getExit());
     }
 
     @Test
     public void runWithOpenEntryBuyLeft() {
         List<TimeSeries> subseries = seriesForRun.split(Period.years(1));
-        Operation[] enter = new Operation[] { null, Operation.buyAt(1), null, null, null, null, null, null, null };
-        Operation[] exit = { null, null, null, Operation.sellAt(3), null, null, null, null, null };
-
-        Strategy strategy = new MockStrategy(enter, exit);
-        List<Trade> trades = subseries.get(0).run(strategy);
+        TimeSeries slice = subseries.get(0);
+        Strategy aStrategy = new Strategy(new FixedRule(1), new FixedRule(3));
+        List<Trade> trades = slice.run(aStrategy).getTrades();
         assertEquals(1, trades.size());
 
-        assertEquals(Operation.buyAt(1), trades.get(0).getEntry());
-        assertEquals(Operation.sellAt(3), trades.get(0).getExit());
+        assertEquals(Order.buyAt(1, slice.getTick(1).getClosePrice(), Decimal.NaN), trades.get(0).getEntry());
+        assertEquals(Order.sellAt(3, slice.getTick(3).getClosePrice(), Decimal.NaN), trades.get(0).getExit());
     }
 
     @Test
     public void runWithOpenEntrySellLeft() {
-        Operation[] enter = new Operation[] { null, Operation.sellAt(1), null, null, null, null, null, null, null };
-        Operation[] exit = { null, null, null, Operation.buyAt(3), null, null, null, null, null };
-
         List<TimeSeries> subseries = seriesForRun.split(Period.years(1));
-        Strategy strategy = new MockStrategy(enter, exit);
-        List<Trade> trades = subseries.get(0).run(strategy, OperationType.SELL);
+        TimeSeries slice = subseries.get(0);
+        Strategy aStrategy = new Strategy(new FixedRule(1), new FixedRule(3));
+        List<Trade> trades = slice.run(aStrategy, OrderType.SELL).getTrades();
         assertEquals(1, trades.size());
 
-        assertEquals(Operation.sellAt(1), trades.get(0).getEntry());
-        assertEquals(Operation.buyAt(3), trades.get(0).getExit());
+        assertEquals(Order.sellAt(1, slice.getTick(1).getClosePrice(), Decimal.NaN), trades.get(0).getEntry());
+        assertEquals(Order.buyAt(3, slice.getTick(3).getClosePrice(), Decimal.NaN), trades.get(0).getExit());
     }
 
     @Test
     public void runSplitted() {
         List<TimeSeries> subseries = seriesForRun.split(Period.years(1));
+        TimeSeries slice0 = subseries.get(0);
+        TimeSeries slice1 = subseries.get(1);
+        TimeSeries slice2 = subseries.get(2);
 
-        List<Trade> trades = subseries.get(0).run(strategy);
+        List<Trade> trades = slice0.run(strategy).getTrades();
         assertEquals(1, trades.size());
-        assertEquals(Operation.buyAt(2), trades.get(0).getEntry());
-        assertEquals(Operation.sellAt(4), trades.get(0).getExit());
+        assertEquals(Order.buyAt(2, slice0.getTick(2).getClosePrice(), Decimal.NaN), trades.get(0).getEntry());
+        assertEquals(Order.sellAt(4, slice0.getTick(4).getClosePrice(), Decimal.NaN), trades.get(0).getExit());
 
-        trades = subseries.get(1).run(strategy);
+        trades = slice1.run(strategy).getTrades();
         assertTrue(trades.isEmpty());
 
-        trades = subseries.get(2).run(strategy);
+        trades = slice2.run(strategy).getTrades();
         assertEquals(1, trades.size());
-        assertEquals(Operation.buyAt(6), trades.get(0).getEntry());
-        assertEquals(Operation.sellAt(7), trades.get(0).getExit());
-
+        assertEquals(Order.buyAt(6, slice2.getTick(6).getClosePrice(), Decimal.NaN), trades.get(0).getEntry());
+        assertEquals(Order.sellAt(7, slice2.getTick(7).getClosePrice(), Decimal.NaN), trades.get(0).getExit());
     }
 
     @Test
@@ -454,38 +462,40 @@ public class TimeSeriesTest {
                     new DateTime[]{date.withYear(2000), date.withYear(2000), date.withYear(2001), date.withYear(2001), date.withYear(2002),
                                    date.withYear(2002), date.withYear(2002), date.withYear(2003), date.withYear(2004), date.withYear(2005)});
 
-        Operation[] enter = new Operation[] { Operation.buyAt(0), null, null, Operation.buyAt(3),
-                null, Operation.buyAt(5), null, Operation.buyAt(7), null, null };
-        Operation[] exit = new Operation[] { null, null, Operation.sellAt(2), null, Operation.sellAt(4), null, Operation.sellAt(6),
-                null, null, Operation.sellAt(9) };
-        Strategy mockStrategy = new MockStrategy(enter, exit);
+        Strategy aStrategy = new Strategy(new FixedRule(0, 3, 5, 7), new FixedRule(2, 4, 6, 9));
 
         List<TimeSeries> subseries = series.split(Period.years(1));
-
-        List<Trade> trades = subseries.get(0).run(mockStrategy);
+        TimeSeries slice0 = subseries.get(0);
+        TimeSeries slice1 = subseries.get(1);
+        TimeSeries slice2 = subseries.get(2);
+        TimeSeries slice3 = subseries.get(3);
+        TimeSeries slice4 = subseries.get(4);
+        TimeSeries slice5 = subseries.get(5);
+        
+        List<Trade> trades = slice0.run(aStrategy).getTrades();
         assertEquals(1, trades.size());
-        assertEquals(Operation.buyAt(0), trades.get(0).getEntry());
-        assertEquals(Operation.sellAt(2), trades.get(0).getExit());
+        assertEquals(Order.buyAt(0, slice0.getTick(0).getClosePrice(), Decimal.NaN),trades.get(0).getEntry());
+        assertEquals(Order.sellAt(2, slice0.getTick(2).getClosePrice(), Decimal.NaN), trades.get(0).getExit());
 
-        trades = subseries.get(1).run(mockStrategy);
+        trades = slice1.run(aStrategy).getTrades();
         assertEquals(1, trades.size());
-        assertEquals(Operation.buyAt(3), trades.get(0).getEntry());
-        assertEquals(Operation.sellAt(4), trades.get(0).getExit());
+        assertEquals(Order.buyAt(3, slice1.getTick(3).getClosePrice(), Decimal.NaN), trades.get(0).getEntry());
+        assertEquals(Order.sellAt(4, slice1.getTick(4).getClosePrice(), Decimal.NaN), trades.get(0).getExit());
 
-        trades = subseries.get(2).run(mockStrategy);
+        trades = slice2.run(aStrategy).getTrades();
         assertEquals(1, trades.size());
-        assertEquals(Operation.buyAt(5), trades.get(0).getEntry());
-        assertEquals(Operation.sellAt(6), trades.get(0).getExit());
+        assertEquals(Order.buyAt(5, slice2.getTick(5).getClosePrice(), Decimal.NaN), trades.get(0).getEntry());
+        assertEquals(Order.sellAt(6, slice2.getTick(6).getClosePrice(), Decimal.NaN), trades.get(0).getExit());
 
-        trades = subseries.get(3).run(mockStrategy);
+        trades = slice3.run(aStrategy).getTrades();
         assertEquals(1, trades.size());
-        assertEquals(Operation.buyAt(7), trades.get(0).getEntry());
-        assertEquals(Operation.sellAt(9), trades.get(0).getExit());
+        assertEquals(Order.buyAt(7, slice3.getTick(7).getClosePrice(), Decimal.NaN), trades.get(0).getEntry());
+        assertEquals(Order.sellAt(9, slice3.getTick(9).getClosePrice(), Decimal.NaN), trades.get(0).getExit());
 
-        trades = subseries.get(4).run(mockStrategy);
+        trades = slice4.run(aStrategy).getTrades();
         assertTrue(trades.isEmpty());
 
-        trades = subseries.get(5).run(mockStrategy);
+        trades = slice5.run(aStrategy).getTrades();
         assertTrue(trades.isEmpty());
     }
 }

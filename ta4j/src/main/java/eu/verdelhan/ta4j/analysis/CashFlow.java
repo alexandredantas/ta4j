@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -26,7 +26,9 @@ import eu.verdelhan.ta4j.Indicator;
 import eu.verdelhan.ta4j.Decimal;
 import eu.verdelhan.ta4j.TimeSeries;
 import eu.verdelhan.ta4j.Trade;
+import eu.verdelhan.ta4j.TradingRecord;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,26 +42,33 @@ public class CashFlow implements Indicator<Decimal> {
     /** The time series */
     private final TimeSeries timeSeries;
 
-    /** The list of trades */
-    private final List<Trade> trades;
-
-    private List<Decimal> values;
+    /** The cash flow values */
+    private List<Decimal> values = new ArrayList<Decimal>(Arrays.asList(Decimal.ONE));
 
     /**
      * Constructor.
      * @param timeSeries the time series
-     * @param trades the list of trades
+     * @param trade a single trade
      */
-    public CashFlow(TimeSeries timeSeries, List<Trade> trades) {
+    public CashFlow(TimeSeries timeSeries, Trade trade) {
         this.timeSeries = timeSeries;
-        this.trades = trades;
-        values = new ArrayList<Decimal>();
-        values.add(Decimal.ONE);
-        calculate();
+        calculate(trade);
+        fillToTheEnd();
     }
 
     /**
-     * @param index the index
+     * Constructor.
+     * @param timeSeries the time series
+     * @param tradingRecord the trading record
+     */
+    public CashFlow(TimeSeries timeSeries, TradingRecord tradingRecord) {
+        this.timeSeries = timeSeries;
+        calculate(tradingRecord);
+        fillToTheEnd();
+    }
+
+    /**
+     * @param index the tick index
      * @return the cash flow value at the index-th position
      */
     @Override
@@ -80,29 +89,46 @@ public class CashFlow implements Indicator<Decimal> {
     }
 
     /**
-     * Calculates the cash flow.
+     * Calculates the cash flow for a single trade.
+     * @param trade a single trade
      */
-    private void calculate() {
-
-        for (Trade trade : trades) {
-            // For each trade...
-            int begin = trade.getEntry().getIndex() + 1;
-            if (begin > values.size()) {
-                values.addAll(Collections.nCopies(begin - values.size(), values.get(values.size() - 1)));
-            }
-            int end = trade.getExit().getIndex();
-            for (int i = Math.max(begin, 1); i <= end; i++) {
-                Decimal ratio;
-                if (trade.getEntry().isBuy()) {
-                    ratio = timeSeries.getTick(i).getClosePrice().dividedBy(timeSeries.getTick(trade.getEntry().getIndex()).getClosePrice());
-                } else {
-                    ratio = timeSeries.getTick(trade.getEntry().getIndex()).getClosePrice().dividedBy(timeSeries.getTick(i).getClosePrice());
-                }
-                values.add(values.get(trade.getEntry().getIndex()).multipliedBy(ratio));
-            }
+    private void calculate(Trade trade) {
+        final int entryIndex = trade.getEntry().getIndex();
+        int begin = entryIndex + 1;
+        if (begin > values.size()) {
+            Decimal lastValue = values.get(values.size() - 1);
+            values.addAll(Collections.nCopies(begin - values.size(), lastValue));
         }
-        if ((timeSeries.getEnd() - values.size()) >= 0) {
-            values.addAll(Collections.nCopies((timeSeries.getEnd() - values.size()) + 1, values.get(values.size() - 1)));
+        int end = trade.getExit().getIndex();
+        for (int i = Math.max(begin, 1); i <= end; i++) {
+            Decimal ratio;
+            if (trade.getEntry().isBuy()) {
+                ratio = timeSeries.getTick(i).getClosePrice().dividedBy(timeSeries.getTick(entryIndex).getClosePrice());
+            } else {
+                ratio = timeSeries.getTick(entryIndex).getClosePrice().dividedBy(timeSeries.getTick(i).getClosePrice());
+            }
+            values.add(values.get(entryIndex).multipliedBy(ratio));
+        }
+    }
+
+    /**
+     * Calculates the cash flow for a trading record.
+     * @param tradingRecord the trading record
+     */
+    private void calculate(TradingRecord tradingRecord) {
+        for (Trade trade : tradingRecord.getTrades()) {
+            // For each trade...
+            calculate(trade);
+        }
+    }
+
+    /**
+     * Fills with last value till the end of the series.
+     */
+    private void fillToTheEnd() {
+        if (timeSeries.getEnd() >= values.size()) {
+            Decimal lastValue = values.get(values.size() - 1);
+            values.addAll(Collections.nCopies(timeSeries.getEnd() - values.size() + 1, lastValue));
         }
     }
 }

@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -23,14 +23,11 @@
 package eu.verdelhan.ta4j.analysis.criteria;
 
 import eu.verdelhan.ta4j.AnalysisCriterion;
-import eu.verdelhan.ta4j.Operation;
-import eu.verdelhan.ta4j.Operation.OperationType;
+import eu.verdelhan.ta4j.Order;
 import eu.verdelhan.ta4j.TATestsUtils;
 import eu.verdelhan.ta4j.TimeSeries;
-import eu.verdelhan.ta4j.Trade;
+import eu.verdelhan.ta4j.TradingRecord;
 import eu.verdelhan.ta4j.mocks.MockTimeSeries;
-import java.util.ArrayList;
-import java.util.List;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
@@ -40,70 +37,62 @@ public class MaximumDrawdownCriterionTest {
     public void calculateWithNoTrades() {
         MockTimeSeries series = new MockTimeSeries(1, 2, 3, 6, 5, 20, 3);
         MaximumDrawdownCriterion mdd = new MaximumDrawdownCriterion();
-        List<Trade> trades = new ArrayList<Trade>();
 
-        assertEquals(0d, mdd.calculate(series, trades), TATestsUtils.TA_OFFSET);
+        assertEquals(0d, mdd.calculate(series, new TradingRecord()), TATestsUtils.TA_OFFSET);
     }
 
     @Test
     public void calculateWithOnlyGains() {
         MockTimeSeries series = new MockTimeSeries(1, 2, 3, 6, 8, 20, 3);
         MaximumDrawdownCriterion mdd = new MaximumDrawdownCriterion();
-        List<Trade> trades = new ArrayList<Trade>();
-        trades.add(new Trade(Operation.buyAt(0), Operation.sellAt(1)));
-        trades.add(new Trade(Operation.buyAt(2), Operation.sellAt(5)));
+        TradingRecord tradingRecord = new TradingRecord(
+                Order.buyAt(0), Order.sellAt(1),
+                Order.buyAt(2), Order.sellAt(5));
 
-        assertEquals(0d, mdd.calculate(series, trades), TATestsUtils.TA_OFFSET);
+        assertEquals(0d, mdd.calculate(series, tradingRecord), TATestsUtils.TA_OFFSET);
     }
 
     @Test
     public void calculateShouldWork() {
         MockTimeSeries series = new MockTimeSeries(1, 2, 3, 6, 5, 20, 3);
         MaximumDrawdownCriterion mdd = new MaximumDrawdownCriterion();
-        List<Trade> trades = new ArrayList<Trade>();
-        trades.add(new Trade(Operation.buyAt(0), Operation.sellAt(1)));
-        trades.add(new Trade(Operation.buyAt(3), Operation.sellAt(4)));
-        trades.add(new Trade(Operation.buyAt(5), Operation.sellAt(6)));
+        TradingRecord tradingRecord = new TradingRecord(
+                Order.buyAt(0), Order.sellAt(1),
+                Order.buyAt(3), Order.sellAt(4),
+                Order.buyAt(5), Order.sellAt(6));
 
-        assertEquals(.875d, mdd.calculate(series, trades), TATestsUtils.TA_OFFSET);
+        assertEquals(.875d, mdd.calculate(series, tradingRecord), TATestsUtils.TA_OFFSET);
 
     }
 
     @Test
-    public void calculateWithNullSeriesSizeShouldReturn1() {
+    public void calculateWithNullSeriesSizeShouldReturn0() {
         MockTimeSeries series = new MockTimeSeries(new double[] {});
         MaximumDrawdownCriterion mdd = new MaximumDrawdownCriterion();
-        List<Trade> trades = new ArrayList<Trade>();
-
-        assertEquals(0d, mdd.calculate(series, trades), TATestsUtils.TA_OFFSET);
+        assertEquals(0d, mdd.calculate(series, new TradingRecord()), TATestsUtils.TA_OFFSET);
     }
 
     @Test
     public void withTradesThatSellBeforeBuying() {
         MockTimeSeries series = new MockTimeSeries(2, 1, 3, 5, 6, 3, 20);
         MaximumDrawdownCriterion mdd = new MaximumDrawdownCriterion();
-        List<Trade> trades = new ArrayList<Trade>();
-        trades.add(new Trade(Operation.buyAt(0), Operation.sellAt(1)));
-        trades.add(new Trade(Operation.buyAt(3), Operation.sellAt(4)));
-        trades.add(new Trade(Operation.sellAt(5), Operation.buyAt(6)));
-
-        assertEquals(.91, mdd.calculate(series, trades), TATestsUtils.TA_OFFSET);
+        TradingRecord tradingRecord = new TradingRecord(
+                Order.buyAt(0), Order.sellAt(1),
+                Order.buyAt(3), Order.sellAt(4),
+                Order.sellAt(5), Order.buyAt(6));
+        assertEquals(.91, mdd.calculate(series, tradingRecord), TATestsUtils.TA_OFFSET);
     }
 
     @Test
     public void withSimpleTrades() {
         MockTimeSeries series = new MockTimeSeries(1, 10, 5, 6, 1);
         MaximumDrawdownCriterion mdd = new MaximumDrawdownCriterion();
-        List<Trade> trades = new ArrayList<Trade>();
-        trades.add(new Trade(Operation.buyAt(0), Operation.sellAt(1)));
-        trades.add(new Trade(Operation.buyAt(1), Operation.sellAt(2)));
-        trades.add(new Trade(Operation.buyAt(2), Operation.sellAt(3)));
-        trades.add(new Trade(Operation.buyAt(3), Operation.sellAt(4)));
-        // TODO: should raise IndexOutOfBoundsException
-        // trades.add(new Trade(Operation.buyAt(4), new
-        // Operation(5, OperationType.SELL)));
-
-        assertEquals(.9d, mdd.calculate(series, trades), TATestsUtils.TA_OFFSET);
+        TradingRecord tradingRecord = new TradingRecord(
+                Order.buyAt(0), Order.sellAt(1),
+                Order.buyAt(1), Order.sellAt(2),
+                Order.buyAt(2), Order.sellAt(3),
+                Order.buyAt(3), Order.sellAt(4));
+        assertEquals(.9d, mdd.calculate(series, tradingRecord), TATestsUtils.TA_OFFSET);
     }
 
     @Test
@@ -111,12 +100,12 @@ public class MaximumDrawdownCriterionTest {
         MockTimeSeries sampleSeries = new MockTimeSeries(new double[] {1, 1, 1, 1, 1, 10, 5, 6, 1, 1, 1 });
         TimeSeries subSeries = sampleSeries.subseries(4, 8);
         MaximumDrawdownCriterion mdd = new MaximumDrawdownCriterion();
-        List<Trade> trades = new ArrayList<Trade>();
-        trades.add(new Trade(Operation.buyAt(4), Operation.sellAt(5)));
-        trades.add(new Trade(Operation.buyAt(5), Operation.sellAt(6)));
-        trades.add(new Trade(Operation.buyAt(6), Operation.sellAt(7)));
-        trades.add(new Trade(Operation.buyAt(7), Operation.sellAt(8)));
-        assertEquals(.9d, mdd.calculate(subSeries, trades), TATestsUtils.TA_OFFSET);
+        TradingRecord tradingRecord = new TradingRecord(
+                Order.buyAt(4), Order.sellAt(5),
+                Order.buyAt(5), Order.sellAt(6),
+                Order.buyAt(6), Order.sellAt(7),
+                Order.buyAt(7), Order.sellAt(8));
+        assertEquals(.9d, mdd.calculate(subSeries, tradingRecord), TATestsUtils.TA_OFFSET);
         
     }
 

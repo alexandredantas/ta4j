@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -35,8 +35,7 @@ import org.junit.Test;
 public class AccumulationDistributionIndicatorTest {
 
     @Test
-    public void accumulationDistribution()
-    {
+    public void accumulationDistribution() {
         DateTime now = DateTime.now();
         List<Tick> ticks = new ArrayList<Tick>();
         ticks.add(new MockTick(now, 0d, 10d, 12d, 8d, 0d, 200d, 0));//2-2 * 200 / 4

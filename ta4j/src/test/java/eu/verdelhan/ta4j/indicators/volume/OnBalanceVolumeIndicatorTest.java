@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -34,8 +34,7 @@ import org.junit.Test;
 public class OnBalanceVolumeIndicatorTest {
 
     @Test
-    public void getValue()
-    {
+    public void getValue() {
         DateTime now = DateTime.now();
         List<Tick> ticks = new ArrayList<Tick>();
         ticks.add(new MockTick(now, 0, 10, 0, 0, 0, 4, 0));
@@ -45,12 +44,25 @@ public class OnBalanceVolumeIndicatorTest {
         ticks.add(new MockTick(now, 0, 7, 0, 0, 0, 6, 0));
         ticks.add(new MockTick(now, 0, 6, 0, 0, 0, 10, 0));
 
-        OnBalanceVolumeIndicator onBalance = new OnBalanceVolumeIndicator(new MockTimeSeries(ticks));
-        assertDecimalEquals(onBalance.getValue(0), 0);
-        assertDecimalEquals(onBalance.getValue(1), -2);
-        assertDecimalEquals(onBalance.getValue(2), 1);
-        assertDecimalEquals(onBalance.getValue(3), 9);
-        assertDecimalEquals(onBalance.getValue(4), 9);
-        assertDecimalEquals(onBalance.getValue(5), -1);
+        OnBalanceVolumeIndicator obv = new OnBalanceVolumeIndicator(new MockTimeSeries(ticks));
+        assertDecimalEquals(obv.getValue(0), 0);
+        assertDecimalEquals(obv.getValue(1), -2);
+        assertDecimalEquals(obv.getValue(2), 1);
+        assertDecimalEquals(obv.getValue(3), 9);
+        assertDecimalEquals(obv.getValue(4), 9);
+        assertDecimalEquals(obv.getValue(5), -1);
+    }
+    
+    @Test
+    public void stackOverflowError() {
+        List<Tick> bigListOfTicks = new ArrayList<Tick>();
+        for (int i = 0; i < 10000; i++) {
+            bigListOfTicks.add(new MockTick(i));
+        }
+        MockTimeSeries bigSeries = new MockTimeSeries(bigListOfTicks);
+        OnBalanceVolumeIndicator obv = new OnBalanceVolumeIndicator(bigSeries);
+        // If a StackOverflowError is thrown here, then the RecursiveCachedIndicator
+        // does not work as intended.
+        assertDecimalEquals(obv.getValue(9999), 0);
     }
 }

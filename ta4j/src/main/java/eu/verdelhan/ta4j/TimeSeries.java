@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,7 +22,7 @@
  */
 package eu.verdelhan.ta4j;
 
-import eu.verdelhan.ta4j.Operation.OperationType;
+import eu.verdelhan.ta4j.Order.OrderType;
 import java.util.ArrayList;
 import java.util.List;
 import org.joda.time.DateTime;
@@ -32,8 +32,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Set of {@link Tick ticks} separated by a predefined period (e.g. 15 minutes, 1 day, etc.)
+ * Sequence of {@link Tick ticks} separated by a predefined period (e.g. 15 minutes, 1 day, etc.)
  * <p>
+ * Notably, a {@link TimeSeries time series} can be:
+ * <ul>
+ * <li>splitted into sub-series
+ * <li>the base of {@link Indicator indicator} calculations
+ * <li>limited to a fixed number of ticks (e.g. for actual trading)
+ * <li>used to run {@link Strategy trading strategies}
+ * </ul>
  */
 public class TimeSeries {
 
@@ -89,6 +96,7 @@ public class TimeSeries {
 
     /**
      * Constructor of an unnamed series.
+     *
      * @param timePeriod the time period (between 2 ticks)
      */
     public TimeSeries(Period timePeriod) {
@@ -296,7 +304,7 @@ public class TimeSeries {
      * @return a constrained {@link TimeSeries time series} which is a sub-set of the current series
      */
     public TimeSeries subseries(int beginIndex, Period duration) {
-        
+
         // Calculating the sub-series interval
         DateTime beginInterval = getTick(beginIndex).getEndTime();
         DateTime endInterval = beginInterval.plus(duration);
@@ -315,7 +323,7 @@ public class TimeSeries {
             // --> Incrementing the number of ticks in the subseries
             subseriesNbTicks++;
         }
-        
+
         return subseries(beginIndex, beginIndex + subseriesNbTicks - 1);
     }
 
@@ -372,55 +380,58 @@ public class TimeSeries {
     /**
      * Runs the strategy over the series.
      * <p>
-     * Opens the trades with {@link OperationType.BUY} operations.
+     * Opens the trades with {@link OrderType.BUY} orders.
      * @param strategy the trading strategy
-     * @return a list of trades
+     * @return the trading record coming from the run
      */
-    public List<Trade> run(Strategy strategy) {
-        return run(strategy, OperationType.BUY);
+    public TradingRecord run(Strategy strategy) {
+        return run(strategy, OrderType.BUY);
     }
 
     /**
      * Runs the strategy over the series.
+     * <p>
+     * Opens the trades with {@link OrderType.BUY} orders.
      * @param strategy the trading strategy
-     * @param operationType the {@link OperationType} used to open the trades
-     * @return a list of trades
+     * @param orderType the {@link OrderType} used to open the trades
+     * @return the trading record coming from the run
      */
-    public List<Trade> run(Strategy strategy, OperationType operationType) {
+    public TradingRecord run(Strategy strategy, OrderType orderType) {
+        return run(strategy, orderType, Decimal.NaN);
+    }
 
-        log.trace("Running strategy: {} (starting with {})", strategy, operationType);
-        List<Trade> trades = new ArrayList<Trade>();
+    /**
+     * Runs the strategy over the series.
+     * <p>
+     * @param strategy the trading strategy
+     * @param orderType the {@link OrderType} used to open the trades
+     * @param amount the amount used to open/close the trades
+     * @return the trading record coming from the run
+     */
+    public TradingRecord run(Strategy strategy, OrderType orderType, Decimal amount) {
 
-        Trade lastTrade = new Trade(operationType);
+        log.trace("Running strategy: {} (starting with {})", strategy, orderType);
+        TradingRecord tradingRecord = new TradingRecord(orderType);
         for (int i = beginIndex; i <= endIndex; i++) {
-            // For each tick in the sub-series...
-            if (strategy.shouldOperate(lastTrade, i)) {
-                lastTrade.operate(i);
-                if (lastTrade.isClosed()) {
-                    // Adding the trade when closed
-                    trades.add(lastTrade);
-                    lastTrade = new Trade(operationType);
-                }
+            // For each tick in the sub-series...       
+            if (strategy.shouldOperate(i, tradingRecord)) {
+                tradingRecord.operate(i, ticks.get(i).getClosePrice(), amount);
             }
         }
 
-        if (lastTrade.isOpened()) {
+        if (!tradingRecord.isClosed()) {
             // If the last trade is still opened, we search out of the end index.
             // May works if the current series is a sub-series (but not the last sub-series).
             for (int i = endIndex + 1; i < ticks.size(); i++) {
                 // For each tick out of sub-series bound...
                 // --> Trying to close the last trade
-                if (strategy.shouldOperate(lastTrade, i)) {
-                    lastTrade.operate(i);
+                if (strategy.shouldOperate(i, tradingRecord)) {
+                    tradingRecord.operate(i, ticks.get(i).getClosePrice(), amount);
                     break;
                 }
             }
-            if (lastTrade.isClosed()) {
-                // Last trade added only if it has been closed finally
-                trades.add(lastTrade);
-            }
         }
-        return trades;
+        return tradingRecord;
     }
 
     /**
@@ -432,7 +443,7 @@ public class TimeSeries {
         for (int i = beginIndex; i < endIndex; i++) {
             // For each tick interval...
             // Looking for the minimum period.
-            long currentPeriodMillis = getTick(i+1).getEndTime().getMillis() - getTick(i).getEndTime().getMillis();
+            long currentPeriodMillis = getTick(i + 1).getEndTime().getMillis() - getTick(i).getEndTime().getMillis();
             if (minPeriod == null) {
                 minPeriod = new Period(currentPeriodMillis);
             } else {

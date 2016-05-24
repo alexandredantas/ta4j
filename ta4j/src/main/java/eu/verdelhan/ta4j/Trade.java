@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,32 +22,39 @@
  */
 package eu.verdelhan.ta4j;
 
-import eu.verdelhan.ta4j.Operation.OperationType;
+import eu.verdelhan.ta4j.Order.OrderType;
 
 /**
- * Set of two {@link Operation operations}. Not a single operation.
- * 
+ * Pair of two {@link Order orders}.
+ * <p>
+ * The exit order has the complement type of the entry order.<br>
+ * I.e.:
+ *   entry == BUY --> exit == SELL
+ *   entry == SELL --> exit == BUY
  */
 public class Trade {
 
-    private Operation entry;
+    /** The entry order */
+    private Order entry;
 
-    private Operation exit;
+    /** The exit order */
+    private Order exit;
 
-    private OperationType startingType;
+    /** The type of the entry order */
+    private OrderType startingType;
 
     /**
      * Constructor.
      */
     public Trade() {
-        this(OperationType.BUY);
+        this(OrderType.BUY);
     }
 
     /**
      * Constructor.
-     * @param startingType the starting {@link OperationType operation type} of the trade
+     * @param startingType the starting {@link OrderType order type} of the trade (i.e. type of the entry order)
      */
-    public Trade(OperationType startingType) {
+    public Trade(OrderType startingType) {
         if (startingType == null) {
             throw new IllegalArgumentException("Starting type must not be null");
         }
@@ -56,28 +63,29 @@ public class Trade {
 
     /**
      * Constructor.
-     * @param entry the entry {@link Operation operation}
-     * @param exit the exit {@link Operation operation}
+     * @param entry the entry {@link Order order}
+     * @param exit the exit {@link Order order}
      */
-    public Trade(Operation entry, Operation exit) {
+    public Trade(Order entry, Order exit) {
         if (entry.getType().equals(exit.getType())) {
-            throw new IllegalArgumentException("Both operations must have different types");
+            throw new IllegalArgumentException("Both orders must have different types");
         }
+        this.startingType = entry.getType();
         this.entry = entry;
         this.exit = exit;
     }
 
     /**
-     * @return the entry {@link Operation operation} of the trade
+     * @return the entry {@link Order order} of the trade
      */
-    public Operation getEntry() {
+    public Order getEntry() {
         return entry;
     }
 
     /**
-     * @return the exit {@link Operation operation} of the trade
+     * @return the exit {@link Order order} of the trade
      */
-    public Operation getExit() {
+    public Order getExit() {
         return exit;
     }
 
@@ -96,18 +104,34 @@ public class Trade {
     }
 
     /**
-     * Operates the trade at the i-th position
-     * @param i the index
+     * Operates the trade at the index-th position
+     * @param index the tick index
+     * @return the order
      */
-    public void operate(int i) {
+    public Order operate(int index) {
+        return operate(index, Decimal.NaN, Decimal.NaN);
+    }
+
+    /**
+     * Operates the trade at the index-th position
+     * @param index the tick index
+     * @param price the price
+     * @param amount the amount
+     * @return the order
+     */
+    public Order operate(int index, Decimal price, Decimal amount) {
+        Order order = null;
         if (isNew()) {
-            entry = new Operation(i, startingType);
+            order = new Order(index, startingType, price, amount);
+            entry = order;
         } else if (isOpened()) {
-            if (i < entry.getIndex()) {
-                throw new IllegalStateException("The index i is less than the entryOperation index");
+            if (index < entry.getIndex()) {
+                throw new IllegalStateException("The index i is less than the entryOrder index");
             }
-            exit = new Operation(i, startingType.complementType());
+            order = new Order(index, startingType.complementType(), price, amount);
+            exit = order;
         }
+        return order;
     }
 
     /**

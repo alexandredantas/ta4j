@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -45,6 +45,8 @@ public class WilliamsRIndicator extends CachedIndicator<Decimal> {
     private MaxPriceIndicator maxPriceIndicator;
 
     private MinPriceIndicator minPriceIndicator;
+    
+    private final static Decimal multiplier = Decimal.valueOf("-100");
 
     public WilliamsRIndicator(TimeSeries timeSeries, int timeFrame) {
         this(new ClosePriceIndicator(timeSeries), timeFrame, new MaxPriceIndicator(timeSeries), new MinPriceIndicator(
@@ -70,7 +72,7 @@ public class WilliamsRIndicator extends CachedIndicator<Decimal> {
 
         return ((highestHighPrice.minus(indicator.getValue(index)))
                 .dividedBy(highestHighPrice.minus(lowestLowPrice)))
-                .multipliedBy(Decimal.valueOf("-100"));
+                .multipliedBy(multiplier);
     }
 
     @Override

@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,21 +22,20 @@
  */
 package ta4jexamples.strategies;
 
+import eu.verdelhan.ta4j.Decimal;
+import eu.verdelhan.ta4j.Rule;
 import eu.verdelhan.ta4j.Strategy;
 import eu.verdelhan.ta4j.TimeSeries;
-import eu.verdelhan.ta4j.Trade;
+import eu.verdelhan.ta4j.TradingRecord;
 import eu.verdelhan.ta4j.analysis.criteria.TotalProfitCriterion;
-import eu.verdelhan.ta4j.indicators.oscillators.StochasticOscillatorDIndicator;
 import eu.verdelhan.ta4j.indicators.oscillators.StochasticOscillatorKIndicator;
 import eu.verdelhan.ta4j.indicators.simple.ClosePriceIndicator;
 import eu.verdelhan.ta4j.indicators.trackers.EMAIndicator;
 import eu.verdelhan.ta4j.indicators.trackers.MACDIndicator;
-import eu.verdelhan.ta4j.strategies.AlwaysOperateStrategy;
-import eu.verdelhan.ta4j.strategies.CombinedEntryAndExitStrategy;
-import eu.verdelhan.ta4j.strategies.IndicatorOverIndicatorStrategy;
-import eu.verdelhan.ta4j.strategies.ResistanceStrategy;
-import eu.verdelhan.ta4j.strategies.SupportStrategy;
-import java.util.List;
+import eu.verdelhan.ta4j.trading.rules.CrossedDownIndicatorRule;
+import eu.verdelhan.ta4j.trading.rules.CrossedUpIndicatorRule;
+import eu.verdelhan.ta4j.trading.rules.OverIndicatorRule;
+import eu.verdelhan.ta4j.trading.rules.UnderIndicatorRule;
 import ta4jexamples.loaders.CsvTradesLoader;
 
 /**
@@ -56,27 +55,28 @@ public class MovingMomentumStrategy {
         }
 
         ClosePriceIndicator closePrice = new ClosePriceIndicator(series);
+        
+        // The bias is bullish when the shorter-moving average moves above the longer moving average.
+        // The bias is bearish when the shorter-moving average moves below the longer moving average.
         EMAIndicator shortEma = new EMAIndicator(closePrice, 9);
         EMAIndicator longEma = new EMAIndicator(closePrice, 26);
 
-        // The bias is bullish when the shorter-moving average moves above the longer moving average.
-        // The bias is bearish when the shorter-moving average moves below the longer moving average.
-        IndicatorOverIndicatorStrategy shortEmaAboveLongEma = new IndicatorOverIndicatorStrategy(shortEma, longEma);
-
         StochasticOscillatorKIndicator stochasticOscillK = new StochasticOscillatorKIndicator(series, 14);
-        StochasticOscillatorDIndicator stochasticOscillD = new StochasticOscillatorDIndicator(stochasticOscillK);
-
-        SupportStrategy support20 = new SupportStrategy(stochasticOscillK, new AlwaysOperateStrategy().opposite(), 20);
-        ResistanceStrategy resist80 = new ResistanceStrategy(stochasticOscillK, new AlwaysOperateStrategy().opposite(), 80);
 
         MACDIndicator macd = new MACDIndicator(closePrice, 9, 26);
         EMAIndicator emaMacd = new EMAIndicator(macd, 18);
-
-        IndicatorOverIndicatorStrategy macdAboveSignalLine = new IndicatorOverIndicatorStrategy(macd, emaMacd);
-
-        return shortEmaAboveLongEma
-                .and(new CombinedEntryAndExitStrategy(support20, resist80))
-                .and(macdAboveSignalLine);
+        
+        // Entry rule
+        Rule entryRule = new OverIndicatorRule(shortEma, longEma) // Trend
+                .and(new CrossedDownIndicatorRule(stochasticOscillK, Decimal.valueOf(20))) // Signal 1
+                .and(new OverIndicatorRule(macd, emaMacd)); // Signal 2
+        
+        // Exit rule
+        Rule exitRule = new UnderIndicatorRule(shortEma, longEma) // Trend
+                .and(new CrossedUpIndicatorRule(stochasticOscillK, Decimal.valueOf(80))) // Signal 1
+                .and(new UnderIndicatorRule(macd, emaMacd)); // Signal 2
+        
+        return new Strategy(entryRule, exitRule);
     }
 
     public static void main(String[] args) {
@@ -88,10 +88,10 @@ public class MovingMomentumStrategy {
         Strategy strategy = buildStrategy(series);
 
         // Running the strategy
-        List<Trade> trades = series.run(strategy);
-        System.out.println("Number of trades for the strategy: " + trades.size());
+        TradingRecord tradingRecord = series.run(strategy);
+        System.out.println("Number of trades for the strategy: " + tradingRecord.getTradeCount());
 
         // Analysis
-        System.out.println("Total profit for the strategy: " + new TotalProfitCriterion().calculate(series, trades));
+        System.out.println("Total profit for the strategy: " + new TotalProfitCriterion().calculate(series, tradingRecord));
     }
 }

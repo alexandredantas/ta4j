@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -54,7 +54,8 @@ public class PPOIndicatorTest {
 
         assertDecimalEquals(ppo.getValue(21), 2.4043);
         assertDecimalEquals(ppo.getValue(22), 2.2224);
-        assertDecimalEquals(ppo.getValue(23), 1.8800);
+        assertDecimalEquals(ppo.getValue(23), 1.88);
+        
         assertDecimalEquals(ppo.getValue(28), 0.4408);
         assertDecimalEquals(ppo.getValue(29), 0.0559);
     }

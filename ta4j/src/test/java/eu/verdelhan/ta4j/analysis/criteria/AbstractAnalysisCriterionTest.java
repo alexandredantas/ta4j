@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,11 +22,10 @@
  */
 package eu.verdelhan.ta4j.analysis.criteria;
 
-import eu.verdelhan.ta4j.Operation;
 import eu.verdelhan.ta4j.Strategy;
-import eu.verdelhan.ta4j.mocks.MockStrategy;
 import eu.verdelhan.ta4j.mocks.MockTimeSeries;
-import eu.verdelhan.ta4j.strategies.AlwaysOperateStrategy;
+import eu.verdelhan.ta4j.trading.rules.BooleanRule;
+import eu.verdelhan.ta4j.trading.rules.FixedRule;
 import java.util.ArrayList;
 import java.util.List;
 import static org.junit.Assert.*;
@@ -35,17 +34,16 @@ import org.junit.Test;
 
 public class AbstractAnalysisCriterionTest {
 
-    private AlwaysOperateStrategy alwaysStrategy;
+    private Strategy alwaysStrategy;
 
-    private MockStrategy buyAndHoldStrategy;
+    private Strategy buyAndHoldStrategy;
 
     private List<Strategy> strategies;
 
     @Before
     public void setUp() {
-        alwaysStrategy = new AlwaysOperateStrategy();
-        buyAndHoldStrategy = new MockStrategy(new Operation[] { Operation.buyAt(0), null, null, null },
-                new Operation[] { null, null, null, Operation.sellAt(4) });
+        alwaysStrategy = new Strategy(BooleanRule.TRUE, BooleanRule.TRUE);
+        buyAndHoldStrategy = new Strategy(new FixedRule(0), new FixedRule(4));
         strategies = new ArrayList<Strategy>();
         strategies.add(alwaysStrategy);
         strategies.add(buyAndHoldStrategy);

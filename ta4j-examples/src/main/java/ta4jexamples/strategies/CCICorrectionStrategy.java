@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -22,16 +22,15 @@
  */
 package ta4jexamples.strategies;
 
-import eu.verdelhan.ta4j.Strategy;
 import eu.verdelhan.ta4j.Decimal;
+import eu.verdelhan.ta4j.Rule;
+import eu.verdelhan.ta4j.Strategy;
 import eu.verdelhan.ta4j.TimeSeries;
-import eu.verdelhan.ta4j.Trade;
+import eu.verdelhan.ta4j.TradingRecord;
 import eu.verdelhan.ta4j.analysis.criteria.TotalProfitCriterion;
 import eu.verdelhan.ta4j.indicators.oscillators.CCIIndicator;
-import eu.verdelhan.ta4j.indicators.simple.ConstantIndicator;
-import eu.verdelhan.ta4j.strategies.CombinedEntryAndExitStrategy;
-import eu.verdelhan.ta4j.strategies.IndicatorOverIndicatorStrategy;
-import java.util.List;
+import eu.verdelhan.ta4j.trading.rules.OverIndicatorRule;
+import eu.verdelhan.ta4j.trading.rules.UnderIndicatorRule;
 import ta4jexamples.loaders.CsvTradesLoader;
 
 /**
@@ -52,20 +51,18 @@ public class CCICorrectionStrategy {
 
         CCIIndicator longCci = new CCIIndicator(series, 200);
         CCIIndicator shortCci = new CCIIndicator(series, 5);
-        ConstantIndicator<Decimal> plus100 = new ConstantIndicator<Decimal>(Decimal.HUNDRED);
-        ConstantIndicator<Decimal> minus100 = new ConstantIndicator<Decimal>(Decimal.valueOf(-100));
-
-        // Trend
-        IndicatorOverIndicatorStrategy bullTrend = new IndicatorOverIndicatorStrategy(longCci, plus100);
-        IndicatorOverIndicatorStrategy bearTrend = new IndicatorOverIndicatorStrategy(longCci, minus100);
-        Strategy trend = new CombinedEntryAndExitStrategy(bullTrend, bearTrend);
-
-        // Signals
-        IndicatorOverIndicatorStrategy buySignal = new IndicatorOverIndicatorStrategy(minus100, shortCci);
-        IndicatorOverIndicatorStrategy sellSignal = new IndicatorOverIndicatorStrategy(plus100, shortCci);
-        Strategy signals = new CombinedEntryAndExitStrategy(buySignal, sellSignal);
-
-        return trend.and(signals);
+        Decimal plus100 = Decimal.HUNDRED;
+        Decimal minus100 = Decimal.valueOf(-100);
+        
+        Rule entryRule = new OverIndicatorRule(longCci, plus100) // Bull trend
+                .and(new UnderIndicatorRule(shortCci, minus100)); // Signal
+        
+        Rule exitRule = new UnderIndicatorRule(longCci, minus100) // Bear trend
+                .and(new OverIndicatorRule(shortCci, plus100)); // Signal
+        
+        Strategy strategy = new Strategy(entryRule, exitRule);
+        strategy.setUnstablePeriod(5);
+        return strategy;
     }
 
     public static void main(String[] args) {
@@ -77,10 +74,10 @@ public class CCICorrectionStrategy {
         Strategy strategy = buildStrategy(series);
 
         // Running the strategy
-        List<Trade> trades = series.run(strategy);
-        System.out.println("Number of trades for the strategy: " + trades.size());
+        TradingRecord tradingRecord = series.run(strategy);
+        System.out.println("Number of trades for the strategy: " + tradingRecord.getTradeCount());
 
         // Analysis
-        System.out.println("Total profit for the strategy: " + new TotalProfitCriterion().calculate(series, trades));
+        System.out.println("Total profit for the strategy: " + new TotalProfitCriterion().calculate(series, tradingRecord));
     }
 }

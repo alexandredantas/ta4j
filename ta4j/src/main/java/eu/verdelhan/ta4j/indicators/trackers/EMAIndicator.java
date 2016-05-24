@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,13 +24,13 @@ package eu.verdelhan.ta4j.indicators.trackers;
 
 import eu.verdelhan.ta4j.Indicator;
 import eu.verdelhan.ta4j.Decimal;
-import eu.verdelhan.ta4j.indicators.CachedIndicator;
+import eu.verdelhan.ta4j.indicators.RecursiveCachedIndicator;
 
 /**
  * Exponential moving average indicator.
  * <p>
  */
-public class EMAIndicator extends CachedIndicator<Decimal> {
+public class EMAIndicator extends RecursiveCachedIndicator<Decimal> {
 
     private final Indicator<Decimal> indicator;
 
@@ -38,6 +38,11 @@ public class EMAIndicator extends CachedIndicator<Decimal> {
 
     private final Decimal multiplier;
 
+    /**
+     * Constructor.
+     * @param indicator an indicator
+     * @param timeFrame the EMA time frame
+     */
     public EMAIndicator(Indicator<Decimal> indicator, int timeFrame) {
         super(indicator);
         this.indicator = indicator;
@@ -57,10 +62,5 @@ public class EMAIndicator extends CachedIndicator<Decimal> {
         }
         Decimal emaPrev = getValue(index - 1);
         return indicator.getValue(index).minus(emaPrev).multipliedBy(multiplier).plus(emaPrev);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + " timeFrame: " + timeFrame;
     }
 }

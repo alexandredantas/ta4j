@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -30,7 +30,7 @@ import java.util.List;
  * Can be used to:
  * <ul>
  * <li>Analyze the performance of a {@link Strategy strategy}
- * <li>Compare several {@link Strategy strategies}
+ * <li>Compare several {@link Strategy strategies} together
  * </ul>
  */
 public interface AnalysisCriterion {
@@ -44,10 +44,10 @@ public interface AnalysisCriterion {
 
     /**
      * @param series a time series
-     * @param trades a list of trades
+     * @param tradingRecord a trading record
      * @return the criterion value for the trades
      */
-    double calculate(TimeSeries series, List<Trade> trades);
+    double calculate(TimeSeries series, TradingRecord tradingRecord);
 
     /**
      * @param series the time series

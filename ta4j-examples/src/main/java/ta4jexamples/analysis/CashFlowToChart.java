@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -27,13 +27,12 @@ import eu.verdelhan.ta4j.Strategy;
 import eu.verdelhan.ta4j.Decimal;
 import eu.verdelhan.ta4j.Tick;
 import eu.verdelhan.ta4j.TimeSeries;
-import eu.verdelhan.ta4j.Trade;
+import eu.verdelhan.ta4j.TradingRecord;
 import eu.verdelhan.ta4j.analysis.CashFlow;
 import eu.verdelhan.ta4j.indicators.simple.ClosePriceIndicator;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.text.SimpleDateFormat;
-import java.util.List;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -110,9 +109,9 @@ public class CashFlowToChart {
         // Building the trading strategy
         Strategy strategy = MovingMomentumStrategy.buildStrategy(series);
         // Running the strategy
-        List<Trade> trades = series.run(strategy);
+        TradingRecord tradingRecord = series.run(strategy);
         // Getting the cash flow of the resulting trades
-        CashFlow cashFlow = new CashFlow(series, trades);
+        CashFlow cashFlow = new CashFlow(series, tradingRecord);
 
         /**
          * Building chart datasets

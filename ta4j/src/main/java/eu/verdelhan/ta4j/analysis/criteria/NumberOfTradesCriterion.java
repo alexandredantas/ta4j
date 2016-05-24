@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,7 +24,7 @@ package eu.verdelhan.ta4j.analysis.criteria;
 
 import eu.verdelhan.ta4j.TimeSeries;
 import eu.verdelhan.ta4j.Trade;
-import java.util.List;
+import eu.verdelhan.ta4j.TradingRecord;
 
 /**
  * Number of trades criterion.
@@ -32,8 +32,8 @@ import java.util.List;
 public class NumberOfTradesCriterion extends AbstractAnalysisCriterion {
 
     @Override
-    public double calculate(TimeSeries series, List<Trade> trades) {
-        return trades.size();
+    public double calculate(TimeSeries series, TradingRecord tradingRecord) {
+        return tradingRecord.getTradeCount();
     }
 
     @Override

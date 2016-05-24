@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -50,7 +50,7 @@ public class TripleEMAIndicatorTest {
         TripleEMAIndicator tripleEma = new TripleEMAIndicator(closePrice, 5);
 
         assertDecimalEquals(tripleEma.getValue(0), 0.73);
-        assertDecimalEquals(tripleEma.getValue(1), 0.72125);
+        assertDecimalEquals(tripleEma.getValue(1), 0.7213);
         assertDecimalEquals(tripleEma.getValue(2), 0.818);
 
         assertDecimalEquals(tripleEma.getValue(6), 0.8034);

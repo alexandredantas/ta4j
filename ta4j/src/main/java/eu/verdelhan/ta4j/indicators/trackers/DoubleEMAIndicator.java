@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -29,6 +29,7 @@ import eu.verdelhan.ta4j.indicators.CachedIndicator;
 /**
  * Double exponential moving average indicator.
  * <p>
+ * @see https://en.wikipedia.org/wiki/Double_exponential_moving_average
  */
 public class DoubleEMAIndicator extends CachedIndicator<Decimal> {
 

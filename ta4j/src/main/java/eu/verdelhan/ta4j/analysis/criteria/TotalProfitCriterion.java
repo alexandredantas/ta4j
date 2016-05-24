@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -25,7 +25,7 @@ package eu.verdelhan.ta4j.analysis.criteria;
 import eu.verdelhan.ta4j.Decimal;
 import eu.verdelhan.ta4j.TimeSeries;
 import eu.verdelhan.ta4j.Trade;
-import java.util.List;
+import eu.verdelhan.ta4j.TradingRecord;
 
 /**
  * Total profit criterion.
@@ -35,9 +35,9 @@ import java.util.List;
 public class TotalProfitCriterion extends AbstractAnalysisCriterion {
 
     @Override
-    public double calculate(TimeSeries series, List<Trade> trades) {
+    public double calculate(TimeSeries series, TradingRecord tradingRecord) {
         double value = 1d;
-        for (Trade trade : trades) {
+        for (Trade trade : tradingRecord.getTrades()) {
             value *= calculateProfit(series, trade);
         }
         return value;

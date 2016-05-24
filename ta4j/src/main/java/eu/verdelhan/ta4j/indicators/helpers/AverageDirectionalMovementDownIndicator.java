@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,13 +24,13 @@ package eu.verdelhan.ta4j.indicators.helpers;
 
 import eu.verdelhan.ta4j.Decimal;
 import eu.verdelhan.ta4j.TimeSeries;
-import eu.verdelhan.ta4j.indicators.CachedIndicator;
+import eu.verdelhan.ta4j.indicators.RecursiveCachedIndicator;
 
 /**
  * Average of {@link DirectionalMovementDownIndicator directional movement down indicator}.
  * <p>
  */
-public class AverageDirectionalMovementDownIndicator extends CachedIndicator<Decimal> {
+public class AverageDirectionalMovementDownIndicator extends RecursiveCachedIndicator<Decimal> {
     private final int timeFrame;
 
     private final DirectionalMovementDownIndicator dmdown;
@@ -50,10 +50,5 @@ public class AverageDirectionalMovementDownIndicator extends CachedIndicator<Dec
         Decimal nbPeriodsMinusOne = Decimal.valueOf(timeFrame - 1);
         return getValue(index - 1).multipliedBy(nbPeriodsMinusOne).dividedBy(nbPeriods).plus(dmdown.getValue(index).dividedBy(nbPeriods));
 
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + " timeFrame: " + timeFrame;
     }
 }

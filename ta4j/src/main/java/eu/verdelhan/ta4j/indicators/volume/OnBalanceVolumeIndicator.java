@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,13 +24,13 @@ package eu.verdelhan.ta4j.indicators.volume;
 
 import eu.verdelhan.ta4j.Decimal;
 import eu.verdelhan.ta4j.TimeSeries;
-import eu.verdelhan.ta4j.indicators.CachedIndicator;
+import eu.verdelhan.ta4j.indicators.RecursiveCachedIndicator;
 
 /**
  * On-balance volume indicator.
  * <p>
  */
-public class OnBalanceVolumeIndicator extends CachedIndicator<Decimal> {
+public class OnBalanceVolumeIndicator extends RecursiveCachedIndicator<Decimal> {
 
     private final TimeSeries series;
 

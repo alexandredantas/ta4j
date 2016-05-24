@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -23,9 +23,10 @@
 package ta4jexamples.strategies;
 
 import eu.verdelhan.ta4j.Decimal;
+import eu.verdelhan.ta4j.Rule;
 import eu.verdelhan.ta4j.Strategy;
 import eu.verdelhan.ta4j.TimeSeries;
-import eu.verdelhan.ta4j.Trade;
+import eu.verdelhan.ta4j.TradingRecord;
 import eu.verdelhan.ta4j.analysis.criteria.TotalProfitCriterion;
 import eu.verdelhan.ta4j.indicators.helpers.HighestValueIndicator;
 import eu.verdelhan.ta4j.indicators.helpers.LowestValueIndicator;
@@ -33,9 +34,8 @@ import eu.verdelhan.ta4j.indicators.simple.ClosePriceIndicator;
 import eu.verdelhan.ta4j.indicators.simple.MaxPriceIndicator;
 import eu.verdelhan.ta4j.indicators.simple.MinPriceIndicator;
 import eu.verdelhan.ta4j.indicators.simple.MultiplierIndicator;
-import eu.verdelhan.ta4j.strategies.CombinedEntryAndExitStrategy;
-import eu.verdelhan.ta4j.strategies.IndicatorOverIndicatorStrategy;
-import java.util.List;
+import eu.verdelhan.ta4j.trading.rules.OverIndicatorRule;
+import eu.verdelhan.ta4j.trading.rules.UnderIndicatorRule;
 import ta4jexamples.loaders.CsvTradesLoader;
 
 /**
@@ -65,16 +65,14 @@ public class GlobalExtremaStrategy {
         LowestValueIndicator weekMinPrice = new LowestValueIndicator(minPrices, NB_TICKS_PER_WEEK);
 
         // Going long if the close price goes below the min price
-        MultiplierIndicator upWeek = new MultiplierIndicator(weekMinPrice, Decimal.valueOf("1.004"));
-        IndicatorOverIndicatorStrategy buySignal = new IndicatorOverIndicatorStrategy(upWeek, closePrices);
+        MultiplierIndicator downWeek = new MultiplierIndicator(weekMinPrice, Decimal.valueOf("1.004"));
+        Rule buyingRule = new UnderIndicatorRule(closePrices, downWeek);
 
         // Going short if the close price goes above the max price
-        MultiplierIndicator downWeek = new MultiplierIndicator(weekMaxPrice, Decimal.valueOf("0.996"));
-        IndicatorOverIndicatorStrategy sellSignal = new IndicatorOverIndicatorStrategy(closePrices, downWeek);
+        MultiplierIndicator upWeek = new MultiplierIndicator(weekMaxPrice, Decimal.valueOf("0.996"));
+        Rule sellingRule = new OverIndicatorRule(closePrices, upWeek);
 
-        Strategy signals = new CombinedEntryAndExitStrategy(buySignal, sellSignal);
-
-        return signals;
+        return new Strategy(buyingRule, sellingRule);
     }
 
     public static void main(String[] args) {
@@ -86,10 +84,10 @@ public class GlobalExtremaStrategy {
         Strategy strategy = buildStrategy(series);
 
         // Running the strategy
-        List<Trade> trades = series.run(strategy);
-        System.out.println("Number of trades for the strategy: " + trades.size());
+        TradingRecord tradingRecord = series.run(strategy);
+        System.out.println("Number of trades for the strategy: " + tradingRecord.getTradeCount());
 
         // Analysis
-        System.out.println("Total profit for the strategy: " + new TotalProfitCriterion().calculate(series, trades));
+        System.out.println("Total profit for the strategy: " + new TotalProfitCriterion().calculate(series, tradingRecord));
     }
 }

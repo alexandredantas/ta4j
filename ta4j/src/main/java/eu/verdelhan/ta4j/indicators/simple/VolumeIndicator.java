@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -34,13 +34,25 @@ public class VolumeIndicator extends CachedIndicator<Decimal> {
 
     private TimeSeries series;
 
+    private int timeFrame;
+    
     public VolumeIndicator(TimeSeries series) {
+        this(series, 1);
+    }
+
+    public VolumeIndicator(TimeSeries series, int timeFrame) {
         super(series);
         this.series = series;
+        this.timeFrame = timeFrame;
     }
 
     @Override
     protected Decimal calculate(int index) {
-        return series.getTick(index).getVolume();
+        int startIndex = Math.max(0, index - timeFrame + 1);
+        Decimal sumOfVolume = Decimal.ZERO;
+        for (int i = startIndex; i <= index; i++) {
+            sumOfVolume = sumOfVolume.plus(series.getTick(i).getVolume());
+        }
+        return sumOfVolume;
     }
 }

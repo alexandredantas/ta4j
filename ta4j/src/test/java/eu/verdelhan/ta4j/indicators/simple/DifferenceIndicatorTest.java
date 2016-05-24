@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -24,7 +24,6 @@ package eu.verdelhan.ta4j.indicators.simple;
 
 import eu.verdelhan.ta4j.Decimal;
 import static eu.verdelhan.ta4j.TATestsUtils.assertDecimalEquals;
-import eu.verdelhan.ta4j.mocks.MockIndicator;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,14 +31,14 @@ public class DifferenceIndicatorTest {
     
     private ConstantIndicator<Decimal> constantIndicator;
     
-    private MockIndicator<Decimal> mockIndicator;
+    private FixedIndicator<Decimal> mockIndicator;
 
     private DifferenceIndicator differenceIndicator;
     
     @Before
     public void setUp() {
         constantIndicator = new ConstantIndicator<Decimal>(Decimal.valueOf(6));
-        mockIndicator = new MockIndicator<Decimal>(
+        mockIndicator = new FixedIndicator<Decimal>(
                 Decimal.valueOf("-2.0"),
                 Decimal.valueOf("0.00"),
                 Decimal.valueOf("1.00"),

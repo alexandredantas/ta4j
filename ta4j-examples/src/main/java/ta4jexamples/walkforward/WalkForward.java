@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -25,7 +25,7 @@ package ta4jexamples.walkforward;
 import eu.verdelhan.ta4j.AnalysisCriterion;
 import eu.verdelhan.ta4j.Strategy;
 import eu.verdelhan.ta4j.TimeSeries;
-import eu.verdelhan.ta4j.Trade;
+import eu.verdelhan.ta4j.TradingRecord;
 import eu.verdelhan.ta4j.analysis.criteria.TotalProfitCriterion;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -77,8 +77,8 @@ public class WalkForward {
                 Strategy strategy = entry.getKey();
                 String name = entry.getValue();
                 // For each strategy...
-                List<Trade> trades = slice.run(strategy);
-                double profit = profitCriterion.calculate(slice, trades);
+                TradingRecord tradingRecord = slice.run(strategy);
+                double profit = profitCriterion.calculate(slice, tradingRecord);
                 System.out.println("\tProfit for " + name + ": " + profit);
             }
             Strategy bestStrategy = profitCriterion.chooseBest(slice, new ArrayList<Strategy>(strategies.keySet()));

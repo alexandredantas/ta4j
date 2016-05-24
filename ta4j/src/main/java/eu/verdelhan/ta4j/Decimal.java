@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -48,14 +48,16 @@ public final class Decimal implements Comparable<Decimal> {
     public static final Decimal THREE = valueOf(3);
     public static final Decimal TEN = valueOf(10);
     public static final Decimal HUNDRED = valueOf(100);
+    public static final Decimal THOUSAND = valueOf(1000);
 
-    private BigDecimal delegate;
+    private final BigDecimal delegate;
 
     /**
      * Constructor.
      * Only used for NaN instance.
      */
     private Decimal() {
+        delegate = null;
     }
 
     /**
@@ -83,7 +85,7 @@ public final class Decimal implements Comparable<Decimal> {
     }
 
     private Decimal(BigDecimal val) {
-        this(val.toString());
+        delegate = val;
     }
 
     /**
@@ -168,6 +170,19 @@ public final class Decimal implements Comparable<Decimal> {
             return NaN;
         }
         return new Decimal(delegate.pow(n, MATH_CONTEXT));
+    }
+    
+    /**
+     * Returns the correctly rounded natural logarithm (base e) of the <code>double</code> value of this {@code Decimal}.
+     * /!\ Warning! Uses the {@code StrictMath#log(double)} method under the hood.
+     * @return the natural logarithm (base e) of {@code this}
+     * @see StrictMath#log(double)
+     */
+    public Decimal log() {
+        if (this == NaN) {
+            return NaN;
+        }
+        return new Decimal(StrictMath.log(delegate.doubleValue()));
     }
 
     /**

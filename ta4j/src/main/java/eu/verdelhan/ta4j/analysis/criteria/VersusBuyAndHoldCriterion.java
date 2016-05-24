@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2014-2015 Marc de Verdelhan & respective authors
+ * Copyright (c) 2014-2016 Marc de Verdelhan & respective authors (see AUTHORS)
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -23,11 +23,9 @@
 package eu.verdelhan.ta4j.analysis.criteria;
 
 import eu.verdelhan.ta4j.AnalysisCriterion;
-import eu.verdelhan.ta4j.Operation;
 import eu.verdelhan.ta4j.TimeSeries;
 import eu.verdelhan.ta4j.Trade;
-import java.util.ArrayList;
-import java.util.List;
+import eu.verdelhan.ta4j.TradingRecord;
 
 /**
  * Versus "buy and hold" criterion.
@@ -47,18 +45,21 @@ public class VersusBuyAndHoldCriterion extends AbstractAnalysisCriterion {
     }
 
     @Override
-    public double calculate(TimeSeries series, List<Trade> trades) {
-        List<Trade> fakeTrades = new ArrayList<Trade>();
-        fakeTrades.add(new Trade(Operation.buyAt(series.getBegin()), Operation.sellAt(series.getEnd())));
+    public double calculate(TimeSeries series, TradingRecord tradingRecord) {
+        TradingRecord fakeRecord = new TradingRecord();
+        fakeRecord.enter(series.getBegin());
+        fakeRecord.exit(series.getEnd());
 
-        return criterion.calculate(series, trades) / criterion.calculate(series, fakeTrades);
+        return criterion.calculate(series, tradingRecord) / criterion.calculate(series, fakeRecord);
     }
 
     @Override
     public double calculate(TimeSeries series, Trade trade) {
-        List<Trade> trades = new ArrayList<Trade>();
-        trades.add(trade);
-        return calculate(series, trades);
+        TradingRecord fakeRecord = new TradingRecord();
+        fakeRecord.enter(series.getBegin());
+        fakeRecord.exit(series.getEnd());
+
+        return criterion.calculate(series, trade) / criterion.calculate(series, fakeRecord);
     }
 
     @Override
